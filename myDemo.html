@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+	<body>
+		<div id="app">
+
+		</div>
+		<script src="myVue.js"></script>
+		<script>
+
+			//set  get 钩子
+			var Parent = Vue.extend({    //  Vue.options.watch
+				components:{
+					"components-333":{}
+				},
+				watch:{
+					test: function(){
+						console.log("11111")
+					},
+					aa:function () {
+						console.log("33")
+					}
+				},
+				created:function () {
+
+				},
+				data:function(){
+					return {
+						test:1
+					}
+				},
+			});
+			//Parent.options.watch.xxx
+			var Child = Parent.extend({    //  构造函数
+				data:function(){
+					return {
+						test:1
+					}
+				},
+				components:{
+					"components-a":{},
+					"components-2":{}
+				},
+				watch:{
+					test: function(){
+						console.log("老司机")
+					},
+					a:function(){
+
+					}
+				},
+				created:function () {
+
+				}
+			});
+			console.log(Child.options)
+
+			// 创建 Profile 实例，并挂载到一个元素上。
+			//  参数 选项  Vue.options = {  }  参数 选项    传入   自定义了选项
+			//合并    Vue.options = { components }    options 对象合并  components
+		</script>
+	</body>
+</html>
