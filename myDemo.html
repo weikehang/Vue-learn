@@ -13,46 +13,29 @@
 
 			//set  get 钩子
 			var Parent = Vue.extend({    //  Vue.options.watch
+				props:['my-test-s'],
 				components:{
 					"components-333":{}
 				},
-				watch:{
-					test: function(){
-						console.log("11111")
-					},
-					aa:function () {
-						console.log("33")
-					}
-				},
-				created:function () {
-
-				},
-				data:function(){
-					return {
-						test:1
-					}
-				},
-			});
+   			});
 			//Parent.options.watch.xxx
 			var Child = Parent.extend({    //  构造函数
+				props:['my-test-s'],
 				data:function(){
 					return {
 						test:1
 					}
 				},
-				components:{
-					"components-a":{},
-					"components-2":{}
-				},
-				watch:{
-					test: function(){
-						console.log("老司机")
-					},
-					a:function(){
+				directives:{
+					my:{
+						bind:function f() {
 
+						},
+						
+					},
+					ss:function () {
+						
 					}
-				},
-				created:function () {
 
 				}
 			});

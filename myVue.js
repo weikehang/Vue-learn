@@ -207,6 +207,19 @@
         return res;
     };
 
+    //1、parentVal undefined child test{type:null} 2、parentVal test{type:null}  child test{type:null}
+    strats.props = function (parentVal,childVal,vm,key) {
+        if(!parentVal){
+            return childVal;
+        }
+        var res = Object.create(null);
+        extend(res,parentVal);
+        if(childVal){
+            extend(res,childVal) // childVal 覆盖 parentVal
+        }
+        return res
+    };
+
     //内置标签
     var isbuiltInTag = makeMap("slot,component",true);
     var isReservedTag = function (tag) {
@@ -229,10 +242,50 @@
         }
 
     }
+    var camelizeReg = /-(\w)/g;
+    //将中横线命名为驼峰命名
+    function camelize(str) {
+        return str.replace(camelizeReg,function (_,c) {
+            return c ? c.toUpperCase() : ''
+        })
+    }
+    function normalizeProps(options) {
+        var props = options.props;
+        if (!props){
+            return;
+        }
+        var res = {};
+        var i,val,name;
+        if(Array.isArray(props)){
+            i = props.length;
+            while (i--){
+                val = props[i];
+                name = camelize(val);
+                if(typeof val === 'string'){
+                    //将其统一转换为object格式
+                    res[name] = {
+                        type:null
+                    }
+                }else{
+                    warn("使用数组语法时：props的成员必须为字符串");
+                }
+            }
+        }else if(isPlainObject(props)){
+            for (var key in props){
+                 val = props[key];
+                 name = camelize(key);
+                 res[name] = isPlainObject(val) ? val : {type: null};
+            }
+        }else {
+            warn("选项props的值无效：应该为数组或者对象");
+        }
+        options.props = res;
+    }
     //合并选项 并返回新的对象
     function mergeOptions(parent,child,vm){
         //规范检测 components props inject directives
-        checkComponents(child);
+        checkComponents(child);//检测components
+        normalizeProps(child);//规范化props
         var options = {};
         var key;
         for (key in parent){
@@ -250,10 +303,12 @@
         }
         return options;
     }
+    //初始化
     function initMixin(Vue) {
         Vue.prototype._init = function (options) {
             var vm = this;
             vm._ui = uid++;
+            //合拼选项
             vm.$options = mergeOptions(resolveConstructorOptions(vm.constructor),options,vm)
         }
     }
