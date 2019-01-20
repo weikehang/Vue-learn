@@ -10,40 +10,65 @@
 		</div>
 		<script src="myVue.js"></script>
 		<script>
-
-			//set  get 钩子
-			var Parent = Vue.extend({    //  Vue.options.watch
-				props:['my-test-s'],
-				components:{
-					"components-333":{}
-				},
-   			});
-			//Parent.options.watch.xxx
-			var Child = Parent.extend({    //  构造函数
-				props:['my-test-s'],
-				data:function(){
-					return {
-						test:1
-					}
-				},
-				directives:{
-					my:{
-						bind:function f() {
-
-						},
-						
-					},
-					ss:function () {
-						
-					}
-
+			/*var data = {
+				name:'max',
+				age:"20",
+				adress:{
+					no:'111',
+					name:"少时诵诗书"
 				}
-			});
-			console.log(Child.options)
+			};
 
-			// 创建 Profile 实例，并挂载到一个元素上。
-			//  参数 选项  Vue.options = {  }  参数 选项    传入   自定义了选项
-			//合并    Vue.options = { components }    options 对象合并  components
+			function walk(data) {
+				for (let key in data) {
+					let deps = [];
+					let val = data[key];
+					if(toString.call(val) === '[object Object]'){
+						walk(val)
+					}
+					Object.defineProperty(data,key,{
+						get:function () {
+							deps.push(target);
+							return val
+						},
+						set:function (newVal) {
+							if(val === newVal) return;
+							val = newVal;
+
+							deps.forEach(function (fn) {
+								fn();
+							})
+						}
+					});
+				}
+			}
+
+
+			walk(data);
+
+            function render() {
+				return document.write("姓名:"+data.adress.name+"年龄:"+data.age)
+			}
+			var target = null;
+			function $watch(key,fn){
+				target = fn;
+				if (typeof key === 'function'){
+					key();
+					return;
+				}
+				data[key]
+			}
+			$watch(render,render);
+
+			data.adress.name = '11111'*/
+
+			var vm = new Vue({
+				data:{
+					name:'22222'
+				}
+			})
+			console.log(vm.name)
+
 		</script>
 	</body>
 </html>
