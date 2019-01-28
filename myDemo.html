@@ -63,11 +63,15 @@
 			data.adress.name = '11111'*/
 
 			var vm = new Vue({
+				el:"#app",
 				data:{
-					name:'22222'
+					test:1,
+					list:[1,2,3]    //
 				}
-			})
-			console.log(vm.name)
+			});
+			vm.list.push([4,5,6]);
+			console.log(vm)
+			//如何去响应数组的变化
 
 		</script>
 	</body>

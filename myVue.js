@@ -27,9 +27,204 @@
         'filter'
     ];
     
+    //代理Array的原型
+    var methods = [
+        'push',
+        'pop',
+        'shift',
+        'unshift',
+        'splice',
+        'sort',
+        'reverse'
+    ];
+    
+    //代理原型
+    var cacheArrProto = Array.prototype;
+    var shell = Object.create(cacheArrProto); //shell 借壳
+    methods.forEach(function (method) {
+        var cacheMethod = cacheArrProto[method];
+       def(shell,method,function () {
+           //抄袭 原创
+           var args = [],
+               len = arguments.length;
+           console.log(this)
+           while (len--) args[len] = arguments[len];
+           var result = cacheMethod.apply(this,args);
+
+           var ob = this.__ob__;
+           var inserted;
+           switch (method) {
+               case "push":
+               case "unshift":
+                   inserted = args
+                   break;
+               case "slice":
+                   inserted = args.slice(2);
+           }
+           if(inserted){
+               ob.observeArray(inserted);
+           }
+           console.log("监听到数组的变化了");
+           ob.dep.notify();//通知依赖更新
+           return result;
+       }) 
+    });
+
     var noop = function () {
-        
+
     };
+
+    //判断数据是不是一个数组或者对象
+    var isObject = function (obj) {
+        return obj != null && typeof obj === 'object'
+    };
+    //获取对象自身属性的所有名称
+    var arrayKeys = Object.getOwnPropertyNames(shell);
+
+    var hasProto = "_proto_" in {};
+    var shouldObserve = true; //默认开始响应式的监听
+
+    //提供关闭响应式的监听
+    function toggleObserving(value) {
+        shouldObserve = false
+    }
+
+    //给每个对象添加_ob_属性
+    function def(obj, key, val) {
+        Object.defineProperty(obj, key, {
+            value: val,
+            enumerable: false,//不可枚举
+            configurable: true
+        })
+    }
+
+    //回调列表
+    function Dep() {
+        this.subs = [];
+    }
+
+    //实行更新watcher对象
+    Dep.target = null;
+
+    //为该属性对应的dep对象添加本次更新的watcher
+    Dep.prototype.depend = function () {
+        console.log('收集依赖')
+    };
+    //添加watcher实例对象
+    Dep.prototype.addSub = function (sub) {
+        this.subs.push(sub)
+    };
+    //数据更新操作
+    Dep.prototype.notify = function () {
+        var subs = this.subs.slice();
+        for (var i = 0; i < subs.length; i++) {
+            subs[i].updata();
+        }
+    };
+
+
+    //将监听的数据添加到Observe
+    function Observe(value) {
+        this.value = value;
+        this.vmCount = 0;
+        this.dep = new Dep(); //回调列表 依赖 依赖在什么时候使用
+        def(value, '__ob__', this);
+        if(Array.isArray(value)){
+           var augment = hasProto ? protoAugment : copyAugment;
+            augment(value, shell, arrayKeys);
+        }else{
+            this.walk(value);
+        }
+    }
+
+    Observe.prototype.walk = function (obj) {
+        var keys = Object.keys(obj);
+        for (var i = 0, j = keys.length; i < j; i++) {
+            defineReactive(obj, keys[i])
+        }
+    };
+
+    Observe.prototype.observeArray = function (items) {
+      for (var i = 0, j = items.length;i<j;i++){
+          observe(items[i])
+      }
+    };
+
+    //响应式系统的入口
+    function observe(value, asRootData) {
+        //判断data是对象还是数组
+        if (!isObject(value)) {
+            return
+        }
+        var ob;
+        if (hasOwn(value, '_ob_') && value.__ob__ instanceof Observer) {
+            ob = value.__ob__;
+        } else if (shouldObserve
+            && (Array.isArray(value) || isPlainObject(value)) &&
+            Object.isExtensible(value) && !value._isVue) {
+            ob = new Observe(value);
+        }
+
+        if (ob && asRootData) {
+            ob.vmCount++;
+        }
+
+        return ob;
+    }
+
+    //目标源 代理原型对象
+    function protoAugment(target,src) {
+        target.__proto__ = src;
+    }
+
+    //一个个方法来绑定   //兼容浏览器
+    function copyAugment(target,src,keys) {
+        for (var i=0,j=keys.length;i<j;i++){
+            var key = keys[i];
+            def(target,key,src[key])
+        }
+    }
+
+    //响应式系统的核心 将对象的属性转化为访问器属性 getter setter
+    function defineReactive(obj, key, val, shallow) {
+        var dep = new Dep();//依赖收集 回调列表
+        //如果指定的属性存在于对象上，则返回其属性描述符对象（property descriptor），否则返回 undefined。
+        var property = Object.getOwnPropertyDescriptor(obj, key);
+        var getter = property && property.get;
+        var setter = property && property.set;
+        if ((!getter || setter) && arguments.length === 2) {
+            val = obj[key];
+        }
+        var childOb = !shallow && observe(val);
+
+        Object.defineProperty(obj, key, {
+            get: function () {
+                //如果属性之前就定义getter方法，则实行getter方法，返回属性值
+                var value = getter ? getter.call(obj) : val;
+                if (Dep.target) {//要被收集的依赖
+                    dep.depend();//依赖的收集
+                    if (childOb) {
+                        childOb.dep.depend();//依赖的收集
+                    }
+                }
+                return value
+            },
+            set: function (newVal) {
+                var value = getter ? getter.call(obj) : val;
+                //NaN !== NaN
+                if (newVal == value || (value !== value && newVal !== newVal)) {
+                    return;
+                }
+                if (setter) {
+                    setter.call(obj, newVal);
+                } else {
+                    val = newVal;
+                }
+                childOb = !shallow && observe(value);
+                dep.notify();//通知依赖更新
+            }
+        })
+    }
 
     function isPlainObject(value) {
         return toString.call(value) === '[object Object]'
@@ -401,22 +596,24 @@
         vm._isBeingDestroyed = false; //是否正在销毁
 
     }
+
     var sharedProperty = {
-        enumerable:true,
-        configurable:true,
-        get:noop,
-        set:noop
+        enumerable: true,
+        configurable: true,
+        get: noop,
+        set: noop
     };
-    function proxy(target,data,key) {
-        sharedProperty.get = function (){
+
+    function proxy(target, data, key) {
+        sharedProperty.get = function () {
             console.log('监听到你访问我了')
             return this[data][key];
         };
-        sharedProperty.set = function (val){
+        sharedProperty.set = function (val) {
             console.log('监听到你设置了')
             this[data][key] = val;
         };
-        Object.defineProperty(target,key,sharedProperty);
+        Object.defineProperty(target, key, sharedProperty);
     }
 
     function callHook(vm, hook) {
@@ -430,9 +627,10 @@
         }
     }
 
+
     //获取data,将data this指向vm实例
-    function getData(data,vm) {
-        return data.call(vm,vm);
+    function getData(data, vm) {
+        return data.call(vm, vm);
     }
 
     function initData(vm) {
@@ -459,13 +657,10 @@
             if (props && hasOwn(props, key)) {
                 warn("props" + key + "选项已经定义为data的属性");
             } else if (!isReserved(key)) {//是否是内置的属性
-                proxy(vm,'_data',key)
+                proxy(vm, '_data', key)
             }
         }
-    }
-
-    function observe(vm, data) {
-
+        observe(data, true)
     }
 
     function initState(vm) {
@@ -484,7 +679,7 @@
             initData(vm);
         } else {
             //如果已经在vm实例上面有data,则需要将的data进行监听就可以了
-            observe(vm, '_data', true)
+            observe(vm._data, true)
         }
     }
 
@@ -493,6 +688,7 @@
         Vue.prototype._init = function (options) {
             var vm = this;
             vm._ui = uid++;
+            vm._isVue = true;
             //合拼选项
             vm.$options = mergeOptions(resolveConstructorOptions(vm.constructor), options, vm);
             //渲染函数的作用域代理

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+	<body>
+		<script>
+			/*劲舞团   QQ炫舞
+			function test(){   //劲舞团
+				console.log("test");
+			}
+			var cacheTest = test;   //cacheTest  劲舞团
+			
+			test = function(){   //QQ炫舞
+			  console.log("hello max");   //原创
+			  cacheTest();   // 劲舞团
+			}
+			test();   //QQ炫舞
+			*/
+		    var methods = ["push"];
+		   //代理原型
+		   var shell = Object.create(Array.prototype);   //shell 借壳
+		   var cacheArrProto = Array.prototype;
+		   
+		   //代理原型  JavaScript  独有的
+		   methods.forEach(function(key){   //push
+			   shell[key] = function(){
+				  //arr.push()
+				var result = cacheArrProto[key].apply(this, arguments);
+				console.log("代理了原型上的"+key+"方法, 你见到了一个全新的push方法")
+				return result;
+			   }
+		   })
+		   
+		   var arr = [1,2,3];   // arr默认指向 Array.prototype
+		   arr.__proto__ = shell;    
+		   
+		   arr.push(4);   //
+		   console.log(arr);
+		   
+		   /*
+		     var  obj = {};    //obj  Object.prototype
+			 obj[key]
+			 obj.push
+			 
+			 Array.prototype.push
+			 
+			 
+			 shell.push([123]);
+			 
+			 兼容性  __proto__    整体   
+			   
+			 拆分
+			 IE11
+		   */
+		</script>
+	</body>
+</html>
