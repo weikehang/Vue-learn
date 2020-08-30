@@ -6,15 +6,49 @@
 	</head>
 	<body>
 		<div id="app">
+			<img :src="getWebp(require('../assets/banner.png'))" alt="">
+			<img v-webp :src="require('../assets/banner.png')" alt="">
+			<div class="logo" v-webp-bg>
+				的方式方式
+			</div>
+			<div class="banner" v-webp-bg>
+				背景
+			</div>
 		</div>
 		<script src="vue.js"></script>
 		<script>
 		 var vm = new Vue({
 				el:"#app",
-				data:{       
+				data:{
 					test:1,
 					list:[1,2,3]    //
-				}
+				},
+			   directives: {
+				 webp:{
+					 bind:(el => {
+						 if (isWebp) {
+							 el.src = el.src + '_.webp';
+						 }
+					 })
+				 },
+				 webpBg: {
+					 bind:(el => {
+						 let str = el.getAttribute('class').split(' ')
+						 str.push('webpa')
+						 el.setAttribute('class',str.join(" "))
+					 })
+				 }
+			 },
+			 methods: {
+				  isSupportWebp  () {
+					 try {
+						 return document.createElement('canvas').toDataURL('image/webp', 0.5).indexOf('data:image/webp') === 0;
+					 } catch(err) {
+						 return false;
+					 }
+				 }
+
+			 }
 			});
 	        console.log(vm.list)
 			vm.list.push([4,5,6]);
@@ -22,7 +56,7 @@
 			//如何去响应数组的变化
 
 
- 
+
 		</script>
 	</body>
 </html>
